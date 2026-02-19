@@ -1,1 +1,1 @@
-Feb 19: Created the repository.
+Feb 19: Created the repository. Visualized and resized the car-racing environment image.
