@@ -22,5 +22,6 @@ class MDNRNN(nn.Module):
         # nn.scan
         
         # project lstm output to mdn parameters
+        mdn_params = nn.Dense(features=325) # (1 + 32 + 32) * 5 = 325
         
         return log_pi, mu, sigma, final_carry
