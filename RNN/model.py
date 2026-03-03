@@ -4,6 +4,12 @@ import jax.numpy as jnp
 
 
 
+def mdn_loss_fn(log_pi, mu, sigma, z_next):
+    log_N = jax.scipy.stats.norm.logpdf(jnp.expand_dims(z_next, 2), mu, sigma).sum(axis=-1) # (B, T, 5)
+    log_P = jax.scipy.special.logsumexp(log_pi + log_N, axis=-1)    # (B, T)
+    L = -log_P.mean()
+    return L
+
 class MDNRNN(nn.Module):
     hidden_dim: int = 256 # 512 for vizdoom
     num_mixtures: int = 5
@@ -36,7 +42,7 @@ class MDNRNN(nn.Module):
         
         log_pi, mu, log_sigma = jnp.split(mdn_params, [1*self.num_mixtures, 33*self.num_mixtures], axis=-1)
         batch_size, time_steps, _ = outputs.shape
-        mu = mu.reshape(batch_size, time_steps, self.num_mixtures, -1)  # Last dim latent dim
+        mu = mu.reshape(batch_size, time_steps, self.num_mixtures, -1)  # Last dim latent dim (B, T, 5, 32)
         log_sigma = log_sigma.reshape(batch_size, time_steps, self.num_mixtures, -1)
         
         log_pi = jax.nn.log_softmax(log_pi, axis=-1)

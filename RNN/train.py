@@ -9,7 +9,7 @@ with np.load('../data/series.npz') as data:
     mu = data['mu']
     logvar = data['logvar']
     action = data['action']
-    
+
 for epoch in tqdm(range(num_epochs)):
     indices = np.random.permutation(len(mu))
     mu_shuffled = mu[indices]
@@ -28,5 +28,5 @@ for epoch in tqdm(range(num_epochs)):
         a_t = action_batch[:, :-1, :]
         
         # Train the model using z_t, a_t to predict z_next (using h_t)
-        
+
     
