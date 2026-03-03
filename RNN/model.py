@@ -17,7 +17,7 @@ class MDNRNN(nn.Module):
         
         if carry is None:
             batch_size = x_t.shape[0]
-            carry = lstm.initialize_carry(jax.random.key(0), (batch_size, self.hidden_dim))
+            carry = lstm.initialize_carry(jax.random.key(0), (batch_size, 35))  # Pass in the input for first time step
             
         # nn.scan
         def scan_fn(carry, x):
