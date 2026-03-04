@@ -1,5 +1,10 @@
 import numpy as np
+import jax
 from tqdm import tqdm
+import optax
+from flax.training import train_state
+
+from model import MDNRNN, mdn_loss_fn
 
 num_epochs = 20
 batch_size = 100
@@ -9,6 +14,24 @@ with np.load('../data/series.npz') as data:
     mu = data['mu']
     logvar = data['logvar']
     action = data['action']
+
+z_sample = mu[:1]
+a_sample = action[:1]
+model = MDNRNN()
+params = model.init(jax.random.key(0), z_sample, a_sample)
+tx = optax.adam(learning_rate=1e-3)
+state = train_state.TrainState.create(apply_fn=model.apply, params=params['params'], tx=tx)
+
+def loss_fn(state, z_t, a_t, z_next):
+    log_pi, mu, sigma, _ = state.apply_fn({'params': params}, z_t, a_t)
+    loss = mdn_loss_fn(log_pi=log_pi, mu=mu, sigma=sigma, z_next=z_next)
+    return loss
+
+@jax.jit
+def train_step(key, z_t, a_t, z_next, state):
+    loss, grads = jax.value_and_grad(loss_fn)(state, z_t, a_t, z_next)
+    state = state.apply_gradients(grads=grads)
+    return state, loss
 
 for epoch in tqdm(range(num_epochs)):
     indices = np.random.permutation(len(mu))
@@ -28,5 +51,7 @@ for epoch in tqdm(range(num_epochs)):
         a_t = action_batch[:, :-1, :]
         
         # Train the model using z_t, a_t to predict z_next (using h_t)
-
+        state, loss = train_step(jax.random.key(0), z_t, a_t, z_next, state)
+        
+        
     
