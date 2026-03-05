@@ -33,13 +33,13 @@ def train_step(key, z_t, a_t, z_next, state):
     state = state.apply_gradients(grads=grads)
     return state, loss
 
+key = jax.random.key(0)
 for epoch in tqdm(range(num_epochs)):
     indices = np.random.permutation(len(mu))
     mu_shuffled = mu[indices]
     logvar_shuffled = logvar[indices]
     action_shuffled = action[indices]
     
-    key = jax.random.key(0)
     for i in range(0, len(mu_shuffled), batch_size):
         mu_batch = mu_shuffled[i:i+batch_size]
         logvar_batch = logvar_shuffled[i:i+batch_size]
