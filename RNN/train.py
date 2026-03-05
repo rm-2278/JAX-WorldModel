@@ -22,14 +22,14 @@ params = model.init(jax.random.key(0), z_sample, a_sample)
 tx = optax.adam(learning_rate=1e-3)
 state = train_state.TrainState.create(apply_fn=model.apply, params=params['params'], tx=tx)
 
-def loss_fn(state, z_t, a_t, z_next):
+def loss_fn(params, state, z_t, a_t, z_next):
     log_pi, mu, sigma, _ = state.apply_fn({'params': params}, z_t, a_t)
     loss = mdn_loss_fn(log_pi=log_pi, mu=mu, sigma=sigma, z_next=z_next)
     return loss
 
 @jax.jit
 def train_step(key, z_t, a_t, z_next, state):
-    loss, grads = jax.value_and_grad(loss_fn)(state, z_t, a_t, z_next)
+    loss, grads = jax.value_and_grad(loss_fn)(state.params, state, z_t, a_t, z_next)
     state = state.apply_gradients(grads=grads)
     return state, loss
 
@@ -39,6 +39,7 @@ for epoch in tqdm(range(num_epochs)):
     logvar_shuffled = logvar[indices]
     action_shuffled = action[indices]
     
+    key = jax.random.key(0)
     for i in range(0, len(mu_shuffled), batch_size):
         mu_batch = mu_shuffled[i:i+batch_size]
         logvar_batch = logvar_shuffled[i:i+batch_size]
@@ -51,7 +52,8 @@ for epoch in tqdm(range(num_epochs)):
         a_t = action_batch[:, :-1, :]
         
         # Train the model using z_t, a_t to predict z_next (using h_t)
-        state, loss = train_step(jax.random.key(0), z_t, a_t, z_next, state)
+        key, subkey = jax.random.split(key)
+        state, loss = train_step(subkey, z_t, a_t, z_next, state)
         
         
     
