@@ -1,4 +1,4 @@
 from .model import VAE
-from .train import Trainer
+from .train import VisionTrainer
 
-__all__ = ["VAE", "Trainer"]
+__all__ = ["VAE", "VisionTrainer"]

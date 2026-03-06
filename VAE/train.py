@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from model import VAE
+from Trainer.trainer import Trainer
 
 
 epochs = 100
@@ -98,57 +99,59 @@ def train_step(key, batch, state):
     return state, loss
 
 
-class Trainer:
-    def __init__(self, latent_dim=32, seed=42):
-        self.model = VAE(latent_dim=latent_dim)
-        self.seed = seed
+class VisionTrainer(Trainer):
+    def __init__(self, latent_dim: int = 32, seed: int = 42):
+        # Set VAE-specific attrs BEFORE super().__init__, because
+        # super().__init__ calls self.init_model() which needs them.
         self.latent_dim = latent_dim
-        self.init_key = random.key(seed)
-        self.dataloader = Dataloader()
-        # Repository-level checkpoint directory
-        self.ckpt_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'checkpoint'))
-        os.makedirs(self.ckpt_dir, exist_ok=True)
-        self.img_dir = 'media'
+        self.img_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'media'))
         os.makedirs(self.img_dir, exist_ok=True)
 
-        # Get a single example image (keep batch dim) for model init
+        self.dataloader = Dataloader()
         try:
-            batch = next(iter(self.dataloader))
-            self.example_img = batch
+            self.example_img = next(iter(self.dataloader))
         except StopIteration:
             raise RuntimeError('No data found in dataloader')
 
-        self.init_model()
-        
-        
+        super().__init__(seed=seed, ckpt_prefix='vae')
+
+    # ------------------------------------------------------------------
+    # Abstract method implementations
+    # ------------------------------------------------------------------
+
     def init_model(self):
+        self.model = VAE(latent_dim=self.latent_dim)
         params = self.model.init(self.init_key, self.example_img)
         optimizer = optax.adam(learning_rate=lr)
-        self.state = train_state.TrainState.create(apply_fn=self.model.apply, params=params, tx=optimizer)
+        self.state = train_state.TrainState.create(
+            apply_fn=self.model.apply, params=params, tx=optimizer,
+        )
 
+    def _train_epoch(self, key, epoch: int, num_epochs: int):
+        dataloader = BackgroundGenerator(Dataloader(batch_size=batch_size))
+        loss = 0.0
+        with tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", mininterval=1.0) as pbar:
+            for batch in pbar:
+                key, subkey = jax.random.split(key)
+                self.state, loss = train_step(subkey, batch, self.state)
+                pbar.set_postfix(loss=f'{loss:.4f}')
+        return key, loss
 
-    def train(self, key, num_epochs=10):
-        for epoch in range(num_epochs):
-            dataloader = Dataloader(batch_size=batch_size)
-            dataloader = BackgroundGenerator(dataloader)
-            
-            with tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", mininterval=1.0) as pbar:
-                for batch in pbar:
-                    key, subkey = jax.random.split(key)
-                    self.state, loss = train_step(subkey, batch, self.state)
-                    
-                    pbar.set_postfix(loss=f'{loss:.4f}')
-                
-            self.save_comparison(step=epoch)
-            self.save_model(step=epoch)
-            
-    def save_comparison(self, step):
+    # ------------------------------------------------------------------
+    # VAE-specific epoch hook: save comparison images, then checkpoint
+    # ------------------------------------------------------------------
+
+    def _on_epoch_end(self, epoch: int):
+        self.save_comparison(epoch)
+        super()._on_epoch_end(epoch)   # saves checkpoint
+
+    def save_comparison(self, step: int):
         test_imgs = self.example_img[:8].astype(np.float32) / 255.
-        recon, _, _ = self.state.apply_fn(self.state.params, test_imgs, rngs={'sample': random.key(0)}) #Dummy key
+        recon, _, _ = self.state.apply_fn(self.state.params, test_imgs, rngs={'sample': random.key(0)})
         recon = np.array(recon)
         original = np.array(test_imgs)
-        
-        fig, axes = plt.subplots(2, 8, figsize=(16,4))
+
+        fig, axes = plt.subplots(2, 8, figsize=(16, 4))
         for i in range(8):
             axes[0][i].imshow(original[i])
             axes[0][i].axis('off')
@@ -156,21 +159,10 @@ class Trainer:
             axes[1][i].imshow(recon[i])
             axes[1][i].axis('off')
             axes[1][i].set_title('Recon')
-            
+
         plt.tight_layout()
         plt.savefig(f'{self.img_dir}/debug_epoch_{step+1}.png')
         plt.close()
-        
-
-    def save_model(self, step):
-        checkpoints.save_checkpoint(ckpt_dir=self.ckpt_dir, step=step, target=self.state.params, prefix='vae', overwrite=True)
-        
-    def load_model(self):
-        params = checkpoints.restore_checkpoint(ckpt_dir=self.ckpt_dir, target=self.state.params, prefix='vae')
-        self.state = train_state.TrainState.create(apply_fn=self.model.apply, params=params, tx=self.state.tx)
-    
-    def checkpoint_exists(self):
-        return checkpoints.latest_checkpoint(self.ckpt_dir, prefix='vae') is not None
 
 
             
