@@ -14,7 +14,7 @@ ROLLOUTS = 10000  # Change to 200 for debugging
 ROLLOUTS_PER_SHARD = 100
 TOTAL_SHARDS = ROLLOUTS // ROLLOUTS_PER_SHARD
 DIR_NAME = '../data/shards'
-NUM_WORKERS = -1    # All workers
+NUM_WORKERS = 3    # All workers
 
 os.makedirs(DIR_NAME, exist_ok=True)
 
@@ -50,6 +50,8 @@ def collect_shard(shard_id):
     np.savez_compressed(filename, obs=np.stack(obs_list, dtype=np.uint8), 
                         actions=np.stack(action_list, dtype=np.float32), 
                         done=np.stack(done_list, dtype=bool))
+    
+    env.close()
 
 if __name__ == "__main__":
     print(f"Starting collection of {TOTAL_SHARDS} shards")
