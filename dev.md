@@ -6,8 +6,7 @@ Feb 24: Trained the VAE.
 
 
 TODO:
-We must implement rnn.step
-We must implement the trainer module for MDNRNN
+We must implement rnn.step, and modify train_controller.py accordingly
 
 Later on...
 Instead of random uniform, we must use random policy instead
