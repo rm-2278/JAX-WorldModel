@@ -2,12 +2,16 @@ import numpy as np
 import jax
 from tqdm import tqdm
 import optax
-from flax.training import train_state
+from flax.training import train_state, checkpoints
+import os
 
 from model import MDNRNN, mdn_loss_fn
 
 num_epochs = 20
 batch_size = 100
+
+ckpt_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'checkpoint'))
+os.makedirs(ckpt_dir, exist_ok=True)
 
 with np.load('../data/series.npz') as data:
     # (10000, 1000, 32 or 3)
@@ -54,6 +58,9 @@ for epoch in tqdm(range(num_epochs)):
         # Train the model using z_t, a_t to predict z_next (using h_t)
         key, subkey = jax.random.split(key)
         state, loss = train_step(subkey, z_t, a_t, z_next, state)
-        
-        
+    
+    # Save checkpoint after each epoch
+    checkpoints.save_checkpoint(ckpt_dir=ckpt_dir, step=epoch, target=state.params, prefix='rnn', overwrite=True)
+
+print("Training complete. Model saved to checkpoint/")
     

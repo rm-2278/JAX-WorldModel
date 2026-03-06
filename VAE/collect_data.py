@@ -54,8 +54,8 @@ def collect_shard(shard_id):
 if __name__ == "__main__":
     print(f"Starting collection of {TOTAL_SHARDS} shards")
     
-    results = Parallel(n_jobs=NUM_WORKERS, verbose=10)(
+    results = list(tqdm(Parallel(n_jobs=NUM_WORKERS, return_as="generator")(
         delayed(collect_shard)(i) for i in range(TOTAL_SHARDS)
-    )
+    ), total=TOTAL_SHARDS, desc="Shard Collection"))
     
-    print(f"Done collecting shardss")
+    print(f"Done collecting shards")

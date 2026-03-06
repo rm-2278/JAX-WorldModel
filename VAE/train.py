@@ -13,7 +13,7 @@ import multiprocessing as mp
 import subprocess
 import sys
 
-from .model import VAE
+from model import VAE
 
 
 epochs = 100
