@@ -20,7 +20,7 @@ def encode_batch(params, batch):
     return mu, logvar
 
 key = random.key(0)
-trainer = Trainer(latent_dim=32)
+trainer = VisionTrainer(latent_dim=32)
 if not trainer.checkpoint_exists():
     trainer.train(key)
 else:
