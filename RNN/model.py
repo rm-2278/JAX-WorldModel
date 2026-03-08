@@ -19,23 +19,20 @@ class MDNRNN(nn.Module):
     def __call__(self, z_t, a_t, carry=None):
         x_t = jnp.concatenate([z_t, a_t], axis=-1)
         
-        # nn.scan must wrap a Module *class*, not a plain function.
-        # Passing a closure over an nn.Module instance causes Flax to look for
-        # ._state on the carry tuple and raise AttributeError.
-        ScanLSTM = nn.scan(
+        # nn.scan must wrap a Module class, not a plain function.
+        LSTM = nn.scan(
             nn.LSTMCell,
             variable_broadcast="params",
             split_rngs={"params": False},
             in_axes=1, out_axes=1,  # scan over time dimension (axis 1)
         )
-        scan_lstm = ScanLSTM(features=self.hidden_dim)
+        lstm = LSTM(features=self.hidden_dim)
 
         if carry is None:
             batch_size = x_t.shape[0]
-            # initialize_carry expects (batch_size, input_features)
-            carry = scan_lstm.initialize_carry(jax.random.key(0), (batch_size, x_t.shape[-1]))
+            carry = lstm.initialize_carry(jax.random.key(0), (batch_size, x_t.shape[-1]))
 
-        final_carry, outputs = scan_lstm(carry, x_t)  # (B, T, hidden_dim)
+        final_carry, outputs = lstm(carry, x_t)  # (B, T, hidden_dim)
         
         # project lstm output to mdn parameters
         mdn_params = nn.Dense(features=325)(outputs) # (1 + 32 + 32) * 5 = 325  (B, T, 325)
