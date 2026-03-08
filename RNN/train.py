@@ -16,10 +16,6 @@ batch_size = 100
 lr = 1e-3
 
 
-# ------------------------------------------------------------------
-# Loss and train step (module-level so @jax.jit works correctly)
-# ------------------------------------------------------------------
-
 def _loss_fn(params, state, z_t, a_t, z_next):
     log_pi, mu, sigma, _ = state.apply_fn({'params': params}, z_t, a_t)
     return mdn_loss_fn(log_pi=log_pi, mu=mu, sigma=sigma, z_next=z_next)
@@ -31,10 +27,6 @@ def train_step(key, z_t, a_t, z_next, state):
     state = state.apply_gradients(grads=grads)
     return state, loss
 
-
-# ------------------------------------------------------------------
-# MemoryTrainer
-# ------------------------------------------------------------------
 
 class MemoryTrainer(Trainer):
     def __init__(self, seed: int = 42):
@@ -49,10 +41,8 @@ class MemoryTrainer(Trainer):
 
         super().__init__(seed=seed, ckpt_prefix='rnn')
 
-    # ------------------------------------------------------------------
     # Abstract method implementations
-    # ------------------------------------------------------------------
-
+    
     def init_model(self):
         z_sample = self.mu[:1]
         a_sample = self.action[:1]
@@ -79,7 +69,7 @@ class MemoryTrainer(Trainer):
             logvar_b = logvar_s[i:i + batch_size]
             action_b = action_s[i:i + batch_size]
 
-            # Reparameterisation: sample z from q(z|x)
+            # Reparameterisation trick
             std_b = np.exp(logvar_b / 2)
             z_b = mu_b + np.random.normal(0, 1, size=std_b.shape) * std_b
             z_t = z_b[:, :-1, :]

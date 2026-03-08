@@ -26,9 +26,7 @@ class Trainer(abc.ABC):
         """Run one training epoch. Must return (key, loss)."""
         pass
 
-    # ------------------------------------------------------------------
-    # Training loop (template method)
-    # ------------------------------------------------------------------
+    # Training loop
 
     def train(self, key, num_epochs: int = 10):
         for epoch in range(num_epochs):
@@ -39,9 +37,7 @@ class Trainer(abc.ABC):
         """Called after every epoch. Override to add extra behaviour (e.g. visualisation)."""
         self.save_model(epoch)
 
-    # ------------------------------------------------------------------
     # Checkpoint helpers (parameterised by ckpt_prefix)
-    # ------------------------------------------------------------------
 
     def save_model(self, step: int):
         checkpoints.save_checkpoint(
