@@ -175,7 +175,7 @@ if __name__ == "__main__":
         print("No data shards found. Collecting data...")
         subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "collect_data.py")], check=True)
         
-    trainer = Trainer(latent_dim=latent_dim)    # 32 for car racing, 64 for doom
+    trainer = VisionTrainer(latent_dim=latent_dim)    # 32 for car racing, 64 for doom
     key = random.key(0)
     if not trainer.checkpoint_exists():
         trainer.train(key)
