@@ -117,9 +117,7 @@ class VisionTrainer(Trainer):
 
         super().__init__(seed=seed, ckpt_prefix='vae')
 
-    # ------------------------------------------------------------------
     # Abstract method implementations
-    # ------------------------------------------------------------------
 
     def init_model(self):
         self.model = VAE(latent_dim=self.latent_dim)
@@ -139,9 +137,7 @@ class VisionTrainer(Trainer):
                 pbar.set_postfix(loss=f'{loss:.4f}')
         return key, loss
 
-    # ------------------------------------------------------------------
     # VAE-specific epoch hook: save comparison images, then checkpoint
-    # ------------------------------------------------------------------
 
     def _on_epoch_end(self, epoch: int):
         self.save_comparison(epoch)

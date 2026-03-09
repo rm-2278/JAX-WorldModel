@@ -19,14 +19,14 @@ class MDNRNN(nn.Module):
     def __call__(self, z_t, a_t, carry=None):
         x_t = jnp.concatenate([z_t, a_t], axis=-1)
         
-        # nn.scan must wrap a Module class, not a plain function.
+        # nn.scan makes the LSTMCell sequential
         LSTM = nn.scan(
-            nn.LSTMCell,
+            nn.LSTMCell,    # The unit cell for LSTM (a function)
             variable_broadcast="params",
             split_rngs={"params": False},
             in_axes=1, out_axes=1,  # scan over time dimension (axis 1)
         )
-        lstm = LSTM(features=self.hidden_dim)
+        lstm = LSTM(features=self.hidden_dim)   # features is automatically passed to LSTMCell __init__
 
         if carry is None:
             batch_size = x_t.shape[0]
