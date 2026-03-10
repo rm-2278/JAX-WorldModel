@@ -31,7 +31,8 @@ controller_params = controller.init(key, jnp.zeros((1, 32)), jnp.zeros((1, 256))
 
 @jax.jit
 def get_action(vae_params, rnn_params, controller_params, h, obs):
-    z = vision_trainer.model.apply({'params': vae_params}, obs, method=vision_trainer.model.encode)
+    (mu, logvar) = vision_trainer.model.apply({'params': vae_params}, obs, method=vision_trainer.model.encode)
+    z = mu  # Could add noise
     a = controller.apply({'params': controller_params}, z, h)
     next_h = memory_trainer.model.apply({'params': rnn_params}, z, a, h, method=memory_trainer.model.step)
     return a, next_h
