@@ -47,3 +47,8 @@ class MDNRNN(nn.Module):
         sigma = jnp.exp(log_sigma) + 1e-6   # Ensure positive
         
         return log_pi, mu, sigma, final_carry
+    
+    
+    @nn.compact
+    def __step__(self):
+        assert "Not implemented"
