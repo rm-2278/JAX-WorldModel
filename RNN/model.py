@@ -11,7 +11,7 @@ def mdn_loss_fn(log_pi, mu, sigma, z_next):
     return L
 
 class MDNRNN(nn.Module):
-    hidden_dim: int = 256 # 512 for vizdoom
+    hidden_dim: int = 256   # 512 for vizdoom
     num_mixtures: int = 5
     latent_dim: int = 32
     
@@ -21,10 +21,10 @@ class MDNRNN(nn.Module):
         
         # nn.scan makes the LSTMCell sequential
         LSTM = nn.scan(
-            nn.LSTMCell,    # The unit cell for LSTM (a function)
+            nn.LSTMCell,        # The unit cell for LSTM (a function)
             variable_broadcast="params",
             split_rngs={"params": False},
-            in_axes=1, out_axes=1,  # scan over time dimension (axis 1)
+            in_axes=1, out_axes=1,          # scan over time dimension (axis 1)
         )
         lstm = LSTM(features=self.hidden_dim)   # features is automatically passed to LSTMCell __init__
 
@@ -35,7 +35,7 @@ class MDNRNN(nn.Module):
         final_carry, outputs = lstm(carry, x_t)  # (B, T, hidden_dim)
         
         # project lstm output to mdn parameters
-        mdn_params = nn.Dense(features=325)(outputs) # (1 + 32 + 32) * 5 = 325  (B, T, 325)
+        mdn_params = nn.Dense(features=325)(outputs)    # (1 + 32 + 32) * 5 = 325  (B, T, 325)
         
         log_pi, mu, log_sigma = jnp.split(mdn_params, [1*self.num_mixtures, 33*self.num_mixtures], axis=-1)
         batch_size, time_steps, _ = outputs.shape
