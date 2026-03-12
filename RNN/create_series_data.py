@@ -1,5 +1,10 @@
 import sys
-sys.path.append('..') 
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+    
+    
 import os
 import glob
 import jax
@@ -10,8 +15,8 @@ from tqdm import tqdm
 
 from VAE import *
 
-DIR_NAME = '../data'
-DATADIR_NAME = '../data/shards'
+DIR_NAME = str(REPO_ROOT / "data")
+DATADIR_NAME = str(REPO_ROOT / "data" / "shards")
 
 @jax.jit
 def encode_batch(params, batch):

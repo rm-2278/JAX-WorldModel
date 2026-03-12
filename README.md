@@ -13,7 +13,7 @@ Original paper uses gym, but to be compatible with modern development, this repo
 python collect_data.py
 '''
 
-2. Go into RNN folder, change VAE train.py file to add . and execute
+2. Go into RNN folder, and execute
 '''bash
 python create_series_data.py
 '''
