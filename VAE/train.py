@@ -1,6 +1,10 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -15,8 +19,8 @@ from tqdm import tqdm
 import multiprocessing as mp
 import subprocess
 
-from model import VAE
 from Trainer.trainer import Trainer
+from VAE.model import VAE
 
 
 epochs = 100

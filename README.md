@@ -8,12 +8,13 @@ Original paper uses gym, but to be compatible with modern development, this repo
 
 
 ## How to use
-1. Go into VAE folder, and execute
-'''bash
-python collect_data.py
-'''
+run the followings from repo root
+1. Collect image rollouts
+```bash
+python -m VAE.collect_data
+```
 
-2. Go into RNN folder, and execute
-'''bash
-python create_series_data.py
-'''
+2. Create the latent/action series dataset
+```bash
+python -m RNN.create_series_data
+```

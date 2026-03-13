@@ -1,11 +1,11 @@
 import os
-import numpy as np
+from pathlib import Path
+
 import cv2
-import jax
 import gymnasium as gym
-from model import VAE
-from tqdm import tqdm
+import numpy as np
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 """Collects the data and stores as npz"""
 
@@ -13,7 +13,9 @@ MAX_FRAMES = 1000   # Embedded in default
 ROLLOUTS = 10000  # Change to 200 for debugging
 ROLLOUTS_PER_SHARD = 100
 TOTAL_SHARDS = ROLLOUTS // ROLLOUTS_PER_SHARD
-DIR_NAME = '../data/shards'
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DIR_NAME = str(REPO_ROOT / "data" / "shards")
 NUM_WORKERS = 3    # All workers
 
 os.makedirs(DIR_NAME, exist_ok=True)
