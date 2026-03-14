@@ -17,7 +17,7 @@ if not vision_trainer.checkpoint_exists():
 else:
     vision_trainer.load_model()
 
-memory_trainer = MemoryTrainer(latent_dim=32)
+memory_trainer = MemoryTrainer()
 if not memory_trainer.checkpoint_exists():
     memory_trainer.train(key)
 else:
@@ -32,9 +32,9 @@ controller_params = controller.init(key, jnp.zeros((1, 32)), jnp.zeros((1, 256))
 @jax.jit
 def get_action(vae_params, rnn_params, controller_params, h, obs):
     (mu, logvar) = vision_trainer.model.apply({'params': vae_params}, obs, method=vision_trainer.model.encode)
-    z = mu + np.exp(logvar / 2.0)  # Could make it deterministic
+    z = mu + jnp.exp(logvar / 2.0)  # Could make it deterministic
     a = controller.apply({'params': controller_params}, z, h)
-    next_h = memory_trainer.model.apply({'params': rnn_params}, z, a, h, method=memory_trainer.model.step)
+    _, _, _, next_h = memory_trainer.model.apply({'params': rnn_params}, z, a, h, method=memory_trainer.model.step)
     return a, next_h
 
 def rollout(controller_params):
