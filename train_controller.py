@@ -27,15 +27,28 @@ else:
 vae = vision_trainer.state
 rnn = memory_trainer.state
 controller = Controller()
-controller_params = controller.init(key, jnp.zeros((1, 32)), jnp.zeros((1, 256)))
+controller_params = controller.init(key, jnp.zeros((1, 32)), jnp.zeros((1, 256)))["params"]
 
 @jax.jit
-def get_action(vae_params, rnn_params, controller_params, h, obs):
-    (mu, logvar) = vision_trainer.model.apply({'params': vae_params}, obs, method=vision_trainer.model.encode)
-    z = mu + jnp.exp(logvar / 2.0)  # Could make it deterministic
-    a = controller.apply({'params': controller_params}, z, h)
-    _, _, _, next_h = memory_trainer.model.apply({'params': rnn_params}, z, a, h, method=memory_trainer.model.step)
-    return a, next_h
+def get_action(rng, vae_params, rnn_params, controller_params, carry, obs):
+    obs = obs.astype(jnp.float32) / 255.0
+    mu, logvar = vision_trainer.model.apply({"params": vae_params}, obs, method=vision_trainer.model.encode)
+
+    rng, eps_key = jax.random.split(rng)
+    eps = jax.random.normal(eps_key, shape=mu.shape)
+    z = mu + eps * jnp.exp(0.5 * logvar)
+
+    h = carry[1]  # carry = (c, h)
+    a = controller.apply({"params": controller_params}, z, h)
+
+    _, _, _, next_carry = memory_trainer.model.apply(
+        {"params": rnn_params},
+        z,
+        a,
+        carry,
+        method=memory_trainer.model.step,
+    )
+    return rng, a, next_carry
 
 def rollout(controller_params):
     env = gym.make("CarRacing-v3", render_mode="rgb_array", lap_complete_percent=0.95, domain_randomize=False)
@@ -43,17 +56,25 @@ def rollout(controller_params):
     obs = process_frame(obs)
     obs = np.expand_dims(obs, axis=0)
     done = False
-    
-    h = memory_trainer.model.initialize_carry(jax.random.key(0), (1, 256))
-    total_reward = 0
+
+    action_dim = 3
+    in_dim = 32 + action_dim
+    carry = memory_trainer.model.apply(
+        {"params": rnn.params},
+        jax.random.key(0),
+        (1, in_dim),
+        method=memory_trainer.model.initialize_carry,
+    )
+    total_reward = 0.0
+
+    rng = jax.random.key(0)
     
     while not done:
-        a, next_h = get_action(vae.params, rnn.params, controller_params, h, obs)
+        rng, a, carry = get_action(rng, vae.params, rnn.params, controller_params, carry, obs)
         obs, reward, terminated, truncated, _ = env.step(np.array(a[0]))
         obs = process_frame(obs)
         obs = np.expand_dims(obs, axis=0)
         done = terminated or truncated
         total_reward += reward
-        h = next_h
         
     return total_reward

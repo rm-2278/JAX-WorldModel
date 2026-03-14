@@ -30,7 +30,8 @@ class MDNRNN(nn.Module):
         self.mdn_head = nn.Dense(features=out_dim)
     
     def initialize_carry(self, key, dim):
-        return self.lstm.initialize_carry(key, dim)
+        carry = self.lstm.initialize_carry(key, dim)
+        return carry
     
     @nn.compact
     def __call__(self, z_t, a_t, carry=None):
